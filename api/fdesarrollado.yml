@@ -1,0 +1,58 @@
+- name: Instalar y configurar frontend
+  hosts: front
+  become: yes
+  vars_prompt:
+    - name: "repo_url"
+      prompt: "Introduce la URL del repositorio de GitHub"
+      private: no
+    - name: "new_host"
+      prompt: "Introduce el nuevo valor para host (solo dominio o IP)"
+      private: no
+
+  tasks:
+    - name: Actualizar caché de APT
+      apt:
+        update_cache: yes
+
+    - name: Instalar Nginx
+      apt:
+        name: nginx
+        state: present
+
+    - name: Iniciar y habilitar Nginx
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: Instalar Node.js
+      apt:
+        name: nodejs
+        state: present
+
+    - name: Instalar git
+      apt:
+        name: git
+        state: present
+
+    - name: Clonar repositorio
+      git:
+        repo: "{{ repo_url }}"
+        dest: /opt/{{ repo_url | basename | regex_replace('\\.git$', '') }}
+        clone: yes
+        update: yes
+
+    - name: Buscar y reemplazar URL en archivos de src/
+      find:
+        paths: "/opt/{{ repo_url | basename | regex_replace('\\.git$', '') }}/src"
+        patterns: "*.js"
+        recurse: yes
+      register: js_files
+
+    - name: Reemplazar 'localhost' por nuevo host
+      replace:
+        path: "{{ item.path }}"
+        regexp: 'fetch\("http://localhost:3000/users"'
+        replace: 'fetch("http://{{ new_host }}:3000/users"'
+      loop: "{{ js_files.files }}"
+      when: js_files.files | length > 0
