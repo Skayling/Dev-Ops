@@ -15,7 +15,7 @@ RUN npm install
 COPY . .
 
 # Expone el puerto en el que tu API estará corriendo (por ejemplo, 3000)
-EXPOSE 5432
+EXPOSE 3000
 
 # Comando por defecto para iniciar la aplicación
 CMD ["npm", "start"]
