@@ -20,10 +20,6 @@ EXPOSE 3000
 CMD ["npm", "start"]
 
 FROM nginx:stable-alpine AS prod
-
-# Copia los archivos construidos desde el contenedor build
-COPY --from=build /app/build /usr/share/nginx/html
-
 # Expone el puerto 80 para el servidor Nginx
 EXPOSE 80
 
