@@ -1,6 +1,6 @@
 # Usa una imagen oficial de Node.js como base
 FROM node:18-alpine as build
-#miau
+#miau3
 # Crea el directorio de trabajo dentro del contenedor
 WORKDIR /var/lib/jenkins/workspace/Dev-Ops/CN_api_bk
 
