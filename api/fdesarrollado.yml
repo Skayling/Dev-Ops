@@ -1,4 +1,4 @@
-- name: Configurar archivo queries.js desde un repositorio
+- name: Instalar PostgreSQL y configurar archivo queries.js desde un repositorio
   hosts: front
   become: yes
   vars_prompt:
@@ -19,8 +19,13 @@
       private: no
 
   tasks:
+    - name: Asegurar que PostgreSQL esté instalado
+      dnf:
+        name: postgresql-server
+        state: present
+
     - name: Asegurar que git está instalado
-      apt:
+      dnf:
         name: git
         state: present
 
