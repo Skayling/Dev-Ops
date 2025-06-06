@@ -1,58 +1,75 @@
-- name: Instalar y configurar frontend
+- name: Instalar PostgreSQL y configurar archivo queries.js desde un repositorio
   hosts: front
   become: yes
   vars_prompt:
     - name: "repo_url"
-      prompt: "Introduce la URL del repositorio de GitHub"
+      prompt: "Introduce la URL del repositorio de GitHub (por ejemplo, https://github.com/usuario/repositorio.git)"
       private: no
-    - name: "new_host"
-      prompt: "Introduce el nuevo valor para host (solo dominio o IP)"
+    - name: "db_user"
+      prompt: "Introduce el valor para user:"
+      private: no
+    - name: "db_host"
+      prompt: "Introduce el valor para host:"
+      private: no
+    - name: "db_database"
+      prompt: "Introduce el valor para database:"
+      private: no
+    - name: "db_password"
+      prompt: "Introduce el valor para password:"
       private: no
 
   tasks:
-    - name: Actualizar caché de APT
-      apt:
-        update_cache: yes
-
-    - name: Instalar Nginx
-      apt:
-        name: nginx
+    - name: Asegurar que PostgreSQL esté instalado
+      dnf:
+        name: postgresql-server
         state: present
 
-    - name: Iniciar y habilitar Nginx
-      service:
-        name: nginx
-        state: started
-        enabled: yes
-
-    - name: Instalar Node.js
-      apt:
-        name: nodejs
-        state: present
-
-    - name: Instalar git
-      apt:
+    - name: Asegurar que git está instalado
+      dnf:
         name: git
         state: present
 
-    - name: Clonar repositorio
+    - name: Clonar el repositorio
       git:
         repo: "{{ repo_url }}"
-        dest: /opt/{{ repo_url | basename | regex_replace('\\.git$', '') }}
+        dest: "~/{{ repo_url | basename | regex_replace('\\.git$', '') }}"
         clone: yes
         update: yes
 
-    - name: Buscar y reemplazar URL en archivos de src/
-      find:
-        paths: "/opt/{{ repo_url | basename | regex_replace('\\.git$', '') }}/src"
-        patterns: "*.js"
-        recurse: yes
-      register: js_files
+    - name: Verificar si queries.js existe
+      stat:
+        path: "~/{{ repo_url | basename | regex_replace('\\.git$', '') }}/queries.js"
+      register: queries_js
 
-    - name: Reemplazar 'localhost' por nuevo host
+    - name: Fallar si no se encuentra queries.js
+      fail:
+        msg: "No se encontró el archivo queries.js en el repositorio."
+      when: not queries_js.stat.exists
+
+    - name: Reemplazar user en queries.js
       replace:
-        path: "{{ item.path }}"
-        regexp: 'fetch\("http://localhost:3000/users"'
-        replace: 'fetch("http://{{ new_host }}:3000/users"'
-      loop: "{{ js_files.files }}"
-      when: js_files.files | length > 0
+        path: "~/{{ repo_url | basename | regex_replace('\\.git$', '') }}/queries.js"
+        regexp: "user: '',"
+        replace: "user: '{{ db_user }}',"
+
+    - name: Reemplazar host en queries.js
+      replace:
+        path: "~/{{ repo_url | basename | regex_replace('\\.git$', '') }}/queries.js"
+        regexp: "host: '',"
+        replace: "host: '{{ db_host }}',"
+
+    - name: Reemplazar database en queries.js
+      replace:
+        path: "~/{{ repo_url | basename | regex_replace('\\.git$', '') }}/queries.js"
+        regexp: "database: 'api',"
+        replace: "database: '{{ db_database }}',"
+
+    - name: Reemplazar password en queries.js
+      replace:
+        path: "~/{{ repo_url | basename | regex_replace('\\.git$', '') }}/queries.js"
+        regexp: "password: '',"
+        replace: "password: '{{ db_password }}',"
+
+    - name: Mensaje final
+      debug:
+        msg: "¡Configuración completada con éxito en el archivo queries.js!"
