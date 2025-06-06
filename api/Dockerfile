@@ -3,7 +3,7 @@ FROM node:18-alpine AS build
 
 # Crea el directorio donde se almacenará el proyecto dentro del contenedor
 WORKDIR /var/lib/jenkins/workspace/Dev-Ops/CN_React
-#Pato2
+#Pato  final
 # Copia los archivos package.json y package-lock.json (si existe)
 COPY package*.json ./
 
